@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 📈 AI Stock Market Prediction System
 
 > Final Year Project | Department of Software Engineering | 2025
@@ -31,3 +32,6 @@ Open browser: **http://localhost:5000**
 2. Features: 18 technical indicators (MA, RSI, Bollinger Bands, etc.)
 3. Models: Linear Regression (40%) + Random Forest (60%)
 4. Metrics: MAE, RMSE, R² Score
+=======
+# stock-ai-project
+>>>>>>> 8326a8b3f1bfaaf80fe9fe3195386ff8d625aafa
