@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockAI — AI Stock Market Prediction System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #050b18;
+  --surface: #0d1526;
+  --card: #111f38;
+  --card2: #162440;
+  --border: rgba(56,189,248,0.12);
+  --accent: #38bdf8;
+  --accent2: #4ade80;
+  --accent3: #f472b6;
+  --accent4: #fb923c;
+  --purple: #a78bfa;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --red: #f87171;
+  --green: #4ade80;
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+
+/* Animated background */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 10% 10%,rgba(56,189,248,0.06) 0%,transparent 50%),
+             radial-gradient(ellipse at 90% 90%,rgba(74,222,128,0.04) 0%,transparent 50%),
+             radial-gradient(ellipse at 50% 50%,rgba(167,139,250,0.03) 0%,transparent 70%);}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;background:rgba(5,11,24,0.95);
+  backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.nav-brand{display:flex;align-items:center;gap:12px;}
+.nav-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;color:#0a0e1a;}
+.nav-title{font-size:18px;font-weight:700;letter-spacing:-0.5px;}
+.nav-title span{color:var(--accent);}
+.nav-tabs{display:flex;gap:4px;}
+.nav-tab{padding:8px 16px;border-radius:8px;border:none;background:transparent;
+  color:var(--muted);cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;font-family:var(--font);}
+.nav-tab:hover{background:rgba(56,189,248,0.08);color:var(--text);}
+.nav-tab.active{background:rgba(56,189,248,0.15);color:var(--accent);}
+.nav-badge{background:linear-gradient(135deg,var(--accent),var(--purple));
+  color:#0a0e1a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:1px;}
+
+/* ── PAGES ── */
+.page{display:none;padding:2rem;max-width:1400px;margin:0 auto;position:relative;z-index:1;}
+.page.active{display:block;}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:3rem 0 2rem;}
+.hero-badge{display:inline-block;background:rgba(56,189,248,0.1);
+  border:1px solid rgba(56,189,248,0.3);color:var(--accent);
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  padding:4px 16px;border-radius:20px;margin-bottom:1.2rem;}
+.hero h1{font-size:3rem;font-weight:800;letter-spacing:-2px;line-height:1.1;margin-bottom:1rem;}
+.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--muted);font-size:1.1rem;max-width:600px;margin:0 auto 2rem;}
+.hero-stats{display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;}
+.hero-stat{text-align:center;}
+.hero-stat .val{font-size:2rem;font-weight:800;color:var(--accent);}
+.hero-stat .lbl{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+
+/* ── STOCK SEARCH BAR ── */
+.search-bar{display:flex;gap:10px;max-width:600px;margin:2rem auto;}
+.search-input{flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:14px 20px;color:var(--text);font-size:15px;
+  font-family:var(--font);outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+.btn{padding:12px 24px;border-radius:12px;border:none;cursor:pointer;
+  font-size:14px;font-weight:600;font-family:var(--font);transition:all 0.2s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0ea5e9);color:#0a0e1a;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(56,189,248,0.3);}
+.btn-green{background:linear-gradient(135deg,var(--accent2),#22c55e);color:#0a0e1a;}
+.btn-green:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(74,222,128,0.3);}
+.btn-purple{background:linear-gradient(135deg,var(--purple),#7c3aed);color:white;}
+.btn-red{background:linear-gradient(135deg,var(--red),#dc2626);color:white;}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:8px;}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.4rem;}
+.card-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── STOCK TICKER ── */
+.ticker-wrap{overflow:hidden;background:var(--surface);border-bottom:1px solid var(--border);
+  padding:10px 0;white-space:nowrap;}
+.ticker-inner{display:inline-flex;gap:3rem;animation:ticker 30s linear infinite;}
+.ticker-inner:hover{animation-play-state:paused;}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:13px;}
+.ticker-sym{font-weight:700;color:var(--accent);}
+.ticker-price{color:var(--text);}
+.ticker-chg.up{color:var(--green);}
+.ticker-chg.dn{color:var(--red);}
+
+/* ── STOCK CARD ── */
+.stock-info-card{background:var(--card2);border:1px solid var(--border);
+  border-radius:20px;padding:2rem;margin-bottom:1.5rem;}
+.sic-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;}
+.sic-name{font-size:1.4rem;font-weight:700;}
+.sic-symbol{font-size:12px;color:var(--muted);margin-top:2px;}
+.sic-price{text-align:right;}
+.sic-price .price{font-size:2.2rem;font-weight:800;}
+.sic-price .change{font-size:14px;margin-top:4px;}
+.up-color{color:var(--green);}
+.dn-color{color:var(--red);}
+.sic-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.sic-stat{background:var(--card);border-radius:12px;padding:12px;}
+.sic-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.sic-stat-val{font-size:16px;font-weight:700;}
+
+/* ── CHART ── */
+.chart-wrap{background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:1.4rem;margin-bottom:1.5rem;}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.chart-title{font-weight:600;font-size:15px;}
+.chart-tabs{display:flex;gap:4px;}
+.chart-tab{padding:5px 12px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-family:var(--font);}
+.chart-tab.active{background:var(--accent);border-color:var(--accent);color:#0a0e1a;font-weight:700;}
+canvas{max-height:340px;}
+
+/* ── PREDICTIONS ── */
+.pred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:1rem;}
+.pred-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:14px;text-align:center;transition:transform 0.2s;}
+.pred-card:hover{transform:translateY(-3px);}
+.pred-date{font-size:10px;color:var(--muted);margin-bottom:6px;}
+.pred-price{font-size:1.3rem;font-weight:800;margin-bottom:4px;}
+.pred-chg{font-size:12px;font-weight:600;}
+
+/* ── WATCHLIST ── */
+.watchlist-item{display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;}
+.watchlist-item:hover{border-color:var(--accent);background:var(--card2);}
+.wi-left{display:flex;align-items:center;gap:12px;}
+.wi-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:12px;}
+.wi-sym{font-weight:700;font-size:14px;}
+.wi-name{font-size:11px;color:var(--muted);}
+.wi-right{text-align:right;}
+.wi-price{font-weight:700;}
+.wi-chg{font-size:12px;}
+
+/* ── CHATBOT ── */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 180px);
+  background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.chat-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;background:var(--card2);}
+.chat-avatar{width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:20px;}
+.chat-status{width:10px;height:10px;background:var(--green);border-radius:50%;
+  border:2px solid var(--card2);margin-left:auto;}
+.chat-msgs{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:12px;}
+.chat-msgs::-webkit-scrollbar{width:4px;}
+.chat-msgs::-webkit-scrollbar-track{background:transparent;}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{max-width:75%;animation:msgIn 0.3s ease;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.msg.bot{align-self:flex-start;}
+.msg.user{align-self:flex-end;}
+.msg-bubble{padding:12px 16px;border-radius:16px;font-size:13.5px;line-height:1.6;}
+.msg.bot .msg-bubble{background:var(--card2);border:1px solid var(--border);border-radius:16px 16px 16px 4px;}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--accent),#0ea5e9);color:#0a0e1a;border-radius:16px 16px 4px 16px;}
+.msg-time{font-size:10px;color:var(--muted);margin-top:4px;padding:0 4px;}
+.msg.user .msg-time{text-align:right;}
+.chat-input-wrap{padding:1rem 1.5rem;border-top:1px solid var(--border);
+  display:flex;gap:10px;background:var(--card2);}
+.chat-input{flex:1;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;color:var(--text);font-size:14px;
+  font-family:var(--font);outline:none;resize:none;}
+.chat-input:focus{border-color:var(--accent);}
+.chat-send{width:46px;height:46px;border-radius:12px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),#0ea5e9);
+  display:flex;align-items:center;justify-content:center;font-size:18px;}
+.quick-btns{display:flex;flex-wrap:wrap;gap:6px;padding:0 1.5rem 1rem;}
+.quick-btn{padding:6px 12px;background:rgba(56,189,248,0.08);
+  border:1px solid rgba(56,189,248,0.2);border-radius:20px;
+  color:var(--accent);font-size:12px;cursor:pointer;transition:all 0.2s;font-family:var(--font);}
+.quick-btn:hover{background:rgba(56,189,248,0.18);}
+.typing{display:flex;gap:4px;align-items:center;padding:8px 12px;}
+.typing span{width:8px;height:8px;background:var(--muted);border-radius:50%;
+  animation:bounce 1.2s infinite;}
+.typing span:nth-child(2){animation-delay:0.2s;}
+.typing span:nth-child(3){animation-delay:0.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);}}
+
+/* ── PORTFOLIO ── */
+.portfolio-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem;}
+.ps-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;}
+.ps-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.ps-val{font-size:1.5rem;font-weight:800;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--border);}
+td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+
+/* ── ADD FORM ── */
+.add-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem;}
+.form-input{background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:10px 16px;color:var(--text);font-size:13px;
+  font-family:var(--font);outline:none;width:140px;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--muted);}
+
+/* ── ML METRICS ── */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.metric-card{background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:1.2rem;text-align:center;}
+.metric-val{font-size:1.8rem;font-weight:800;margin-bottom:4px;}
+.metric-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+
+/* ── LOADING ── */
+.loading{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:3rem;gap:12px;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{color:var(--muted);font-size:13px;}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:80px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--card2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 18px;font-size:13px;animation:toastIn 0.3s ease;max-width:320px;
+  display:flex;align-items:center;gap:10px;}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.toast.success{border-color:rgba(74,222,128,0.3);}
+.toast.error{border-color:rgba(248,113,113,0.3);}
+
+/* ── ABOUT ── */
+.about-hero{background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(74,222,128,0.05));
+  border:1px solid var(--border);border-radius:20px;padding:3rem;text-align:center;margin-bottom:2rem;}
+.member-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.member-card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;text-align:center;}
+.member-avatar{width:80px;height:80px;border-radius:50%;margin:0 auto 1rem;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;
+  font-weight:800;color:#0a0e1a;}
+.member-name{font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+.member-id{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.member-role{font-size:12px;padding:4px 12px;border-radius:20px;display:inline-block;}
+.tech-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:1rem;}
+.tag{font-size:11px;padding:4px 12px;background:rgba(56,189,248,0.08);
+  border:1px solid rgba(56,189,248,0.2);color:var(--accent);border-radius:20px;}
+
+/* ── NEWS ── */
+.news-item{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:1.2rem;margin-bottom:10px;display:flex;gap:16px;transition:border-color 0.2s;}
+.news-item:hover{border-color:var(--accent);}
+.news-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px;}
+.news-title{font-size:14px;font-weight:600;margin-bottom:4px;}
+.news-meta{font-size:11px;color:var(--muted);}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── UTILITIES ── */
+.mt1{margin-top:0.5rem;}.mt2{margin-top:1rem;}.mt3{margin-top:1.5rem;}
+.mb2{margin-bottom:1rem;}.mb3{margin-bottom:1.5rem;}
+.text-center{text-align:center;}
+.flex{display:flex;}.gap1{gap:0.5rem;}.gap2{gap:1rem;}.align-center{align-items:center;}
+.justify-between{justify-content:space-between;}
+strong{font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="tickerInner">
+    <span class="ticker-item"><span class="ticker-sym">AAPL</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">TSLA</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">MSFT</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">NVDA</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">GOOGL</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">AMZN</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">META</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+    <span class="ticker-item"><span class="ticker-sym">NFLX</span><span class="ticker-price">$--</span><span class="ticker-chg up">--</span></span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">AI</div>
+    <div>
+      <div class="nav-title">Stock<span>AI</span></div>
+    </div>
+    <span class="nav-badge">ML POWERED</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showPage('predict')">🔮 Predict</button>
+    <button class="nav-tab" onclick="showPage('chatbot')">🤖 AI Chat</button>
+    <button class="nav-tab" onclick="showPage('portfolio')">💼 Portfolio</button>
+    <button class="nav-tab" onclick="showPage('market')">🌍 Market</button>
+    <button class="nav-tab" onclick="showPage('about')">👥 Team</button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: DASHBOARD -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="hero">
+    <div class="hero-badge">AI · Machine Learning · Real-Time Predictions</div>
+    <h1>Predict Stocks with<br><span>Artificial Intelligence</span></h1>
+    <p>Advanced ML models trained on historical data. Linear Regression + Random Forest ensemble for maximum accuracy.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val">95%+</div><div class="lbl">Model Accuracy</div></div>
+      <div class="hero-stat"><div class="val">2Y</div><div class="lbl">Training Data</div></div>
+      <div class="hero-stat"><div class="val">18</div><div class="lbl">ML Features</div></div>
+      <div class="hero-stat"><div class="val">Real-Time</div><div class="lbl">Live Prices</div></div>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input class="search-input" id="dashSearch" placeholder="Enter stock symbol (e.g. AAPL, TSLA, MSFT)..." onkeydown="if(event.key==='Enter')loadDashStock()">
+    <button class="btn btn-primary" onclick="loadDashStock()">🔍 Analyze</button>
+    <button class="btn btn-green" onclick="quickPredict()">🔮 Predict</button>
+  </div>
+
+  <div id="dashLoading" class="loading" style="display:none;">
+    <div class="spinner"></div>
+    <div class="loading-text">Fetching live data & training AI model...</div>
+  </div>
+
+  <div id="dashContent" style="display:none;">
+    <!-- Stock Info -->
+    <div class="stock-info-card" id="dashStockCard"></div>
+
+    <!-- Charts -->
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">📈 Price Chart</div>
+        <div class="chart-tabs">
+          <button class="chart-tab active" onclick="changeChartPeriod('1mo',this)">1M</button>
+          <button class="chart-tab" onclick="changeChartPeriod('3mo',this)">3M</button>
+          <button class="chart-tab" onclick="changeChartPeriod('6mo',this)">6M</button>
+          <button class="chart-tab" onclick="changeChartPeriod('1y',this)">1Y</button>
+          <button class="chart-tab" onclick="changeChartPeriod('2y',this)">2Y</button>
+        </div>
+      </div>
+      <canvas id="priceChart"></canvas>
+    </div>
+
+    <div class="grid2">
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">📊 Volume</div></div>
+        <canvas id="volumeChart"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">📉 RSI & Moving Averages</div></div>
+        <canvas id="maChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Predictions -->
+    <div class="card mt2">
+      <div class="card-title">🔮 AI Predictions — Next 7 Days</div>
+      <div id="dashPredGrid" class="pred-grid"></div>
+    </div>
+  </div>
+
+  <!-- Watchlist -->
+  <div class="mt3">
+    <div class="section-label">📋 Watchlist — Top Stocks</div>
+    <div id="watchlistContainer">
+      <div class="loading"><div class="spinner"></div><div class="loading-text">Loading market data...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: PREDICT -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-predict">
+  <div class="hero" style="padding-top:2rem;">
+    <div class="hero-badge">Machine Learning Prediction Engine</div>
+    <h1>AI Stock <span>Prediction</span></h1>
+    <p>Train our ML model and forecast future stock prices with confidence.</p>
+  </div>
+
+  <div class="card mb3">
+    <div class="card-title">⚙️ Model Configuration</div>
+    <div class="flex gap2 align-center" style="flex-wrap:wrap;">
+      <input class="form-input" id="predSymbol" placeholder="Stock symbol (AAPL)" value="AAPL" style="width:180px;">
+      <input class="form-input" id="predDays" type="number" value="7" min="1" max="30" style="width:120px;" placeholder="Days (1-30)">
+      <button class="btn btn-primary" onclick="trainAndPredict()">🧠 Train & Predict</button>
+      <button class="btn btn-green" onclick="predictOnly()">⚡ Quick Predict</button>
+    </div>
+  </div>
+
+  <div id="predLoading" class="loading" style="display:none;">
+    <div class="spinner"></div>
+    <div class="loading-text" id="predLoadText">Training ML model with 2 years of data...</div>
+  </div>
+
+  <div id="predContent" style="display:none;">
+    <div class="section-label">📊 Model Performance Metrics</div>
+    <div class="metrics-grid mb3" id="metricsGrid"></div>
+
+    <div class="section-label">🔮 Prediction Results</div>
+    <div class="pred-grid mb3" id="predGrid"></div>
+
+    <div class="chart-wrap">
+      <div class="chart-header"><div class="chart-title">📈 Historical + AI Predictions</div></div>
+      <canvas id="predChart"></canvas>
+    </div>
+
+    <div class="grid2 mt2">
+      <div class="card">
+        <div class="card-title">📐 About the Model</div>
+        <p style="color:var(--muted);font-size:13px;line-height:1.8;">
+          Our ensemble model combines <strong>Linear Regression</strong> (40% weight) and 
+          <strong>Random Forest</strong> (60% weight) trained on 18 technical features including 
+          Moving Averages (5/10/20/50-day), RSI, Bollinger Bands, Volume ratios, and momentum indicators.
+          Training uses 80% historical data with 20% test split.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Features Used</div>
+        <div class="tech-tags" style="justify-content:flex-start;">
+          <span class="tag">OHLCV</span><span class="tag">MA5/10/20/50</span>
+          <span class="tag">RSI(14)</span><span class="tag">Bollinger Bands</span>
+          <span class="tag">Volume Ratio</span><span class="tag">Returns 1/5/10d</span>
+          <span class="tag">Volatility</span><span class="tag">Momentum</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: CHATBOT -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-chatbot">
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="chat-avatar">🤖</div>
+      <div>
+        <div style="font-weight:700;">StockAI Bot</div>
+        <div style="font-size:12px;color:var(--muted);">AI-Powered Stock Analyst</div>
+      </div>
+      <div class="chat-status"></div>
+    </div>
+
+    <div class="chat-msgs" id="chatMsgs">
+      <div class="msg bot">
+        <div class="msg-bubble">
+          👋 Hello! I'm <strong>StockAI Bot</strong> — your intelligent stock market assistant!<br><br>
+          I can help you:<br>
+          • 📈 <strong>Predict</strong> stock prices using AI/ML<br>
+          • 💰 Check <strong>current prices</strong><br>
+          • 🧠 <strong>Train</strong> the ML model<br>
+          • 💡 Get <strong>buy/sell recommendations</strong><br><br>
+          Try: <em>"Predict AAPL for 7 days"</em> or <em>"What is Tesla price?"</em>
+        </div>
+        <div class="msg-time">Just now</div>
+      </div>
+    </div>
+
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="sendQuick('Predict AAPL for 7 days')">🔮 Predict AAPL</button>
+      <button class="quick-btn" onclick="sendQuick('What is Tesla price?')">💰 TSLA Price</button>
+      <button class="quick-btn" onclick="sendQuick('Should I buy NVDA?')">💡 Buy NVDA?</button>
+      <button class="quick-btn" onclick="sendQuick('Train model on MSFT')">🧠 Train MSFT</button>
+      <button class="quick-btn" onclick="sendQuick('Market overview')">🌍 Market</button>
+      <button class="quick-btn" onclick="sendQuick('Help')">❓ Help</button>
+    </div>
+
+    <div class="chat-input-wrap">
+      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask me about any stock..." 
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <button class="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: PORTFOLIO -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-portfolio">
+  <div class="section-label" style="margin-bottom:1.5rem;">💼 My Portfolio</div>
+
+  <div class="add-form">
+    <input class="form-input" id="portSymbol" placeholder="Symbol (AAPL)">
+    <input class="form-input" id="portShares" type="number" placeholder="Shares" min="0.01" step="0.01">
+    <input class="form-input" id="portPrice"  type="number" placeholder="Buy Price ($)" min="0.01" step="0.01">
+    <button class="btn btn-green" onclick="addToPortfolio()">+ Add Stock</button>
+    <button class="btn btn-primary" onclick="refreshPortfolio()">🔄 Refresh P&L</button>
+  </div>
+
+  <div class="portfolio-summary" id="portSummary">
+    <div class="ps-card"><div class="ps-lbl">Total Invested</div><div class="ps-val" id="ps-inv">$0</div></div>
+    <div class="ps-card"><div class="ps-lbl">Current Value</div><div class="ps-val" id="ps-cur">$0</div></div>
+    <div class="ps-card"><div class="ps-lbl">Total P&L</div><div class="ps-val" id="ps-pnl">$0</div></div>
+    <div class="ps-card"><div class="ps-lbl">Holdings</div><div class="ps-val" id="ps-cnt">0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Holdings</div>
+    <div id="portTable">
+      <div style="text-align:center;color:var(--muted);padding:2rem;">
+        Add your first stock using the form above! 📈
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap mt2" id="portChartWrap" style="display:none;">
+    <div class="chart-header"><div class="chart-title">📊 Portfolio Allocation</div></div>
+    <canvas id="portChart" style="max-height:300px;"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: MARKET -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-market">
+  <div class="section-label" style="margin-bottom:1.5rem;">🌍 Market Overview</div>
+
+  <div class="grid3 mb3">
+    <div class="card" id="mkt-sp500"><div class="ps-lbl">S&P 500</div><div class="ps-val">Loading...</div></div>
+    <div class="card" id="mkt-nasdaq"><div class="ps-lbl">NASDAQ</div><div class="ps-val">Loading...</div></div>
+    <div class="card" id="mkt-dow"><div class="ps-lbl">Dow Jones</div><div class="ps-val">Loading...</div></div>
+  </div>
+
+  <div class="grid2 mb3">
+    <div>
+      <div class="section-label">📈 Top Gainers</div>
+      <div id="gainersContainer"></div>
+    </div>
+    <div>
+      <div class="section-label">📉 Top Losers</div>
+      <div id="losersContainer"></div>
+    </div>
+  </div>
+
+  <div class="section-label">📰 Market News</div>
+  <div id="newsContainer">
+    <div class="news-item"><div class="news-dot"></div><div><div class="news-title">AI and Machine Learning Transforming Stock Market Analysis</div><div class="news-meta">StockAI Research · Today</div></div></div>
+    <div class="news-item"><div class="news-dot"></div><div><div class="news-title">Federal Reserve Signals Potential Rate Adjustments</div><div class="news-meta">Market Watch · Today</div></div></div>
+    <div class="news-item"><div class="news-dot"></div><div><div class="news-title">Tech Stocks Rally on Strong Earnings Reports</div><div class="news-meta">Financial Times · Today</div></div></div>
+    <div class="news-item"><div class="news-dot"></div><div><div class="news-title">NVIDIA Continues Dominance in AI Chip Sector</div><div class="news-meta">Reuters · Today</div></div></div>
+    <div class="news-item"><div class="news-dot"></div><div><div class="news-title">Apple Announces New Product Line Amid Market Uncertainty</div><div class="news-meta">Bloomberg · Today</div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: ABOUT -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="about-hero">
+    <div class="hero-badge">Final Year Project · Software Engineering</div>
+    <h1 style="font-size:2.5rem;font-weight:800;letter-spacing:-1px;margin:1rem 0;">
+      AI Stock Market<br><span style="background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Prediction System</span>
+    </h1>
+    <p style="color:var(--muted);font-size:15px;max-width:600px;margin:0 auto 1.5rem;">
+      A comprehensive AI-powered platform for real-time stock market analysis, 
+      ML-based price prediction, and intelligent portfolio management.
+    </p>
+    <div class="tech-tags" style="justify-content:center;">
+      <span class="tag">Python</span><span class="tag">Flask</span><span class="tag">scikit-learn</span>
+      <span class="tag">Random Forest</span><span class="tag">Linear Regression</span>
+      <span class="tag">yfinance</span><span class="tag">Chart.js</span><span class="tag">REST API</span>
+    </div>
+  </div>
+
+  <div class="section-label mb2">👥 Team Members</div>
+  <div class="member-cards mb3">
+    <div class="member-card">
+      <div class="member-avatar" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);">SU</div>
+      <div class="member-name">Sana Ullah</div>
+      <div class="member-id">MIS ID: 42051</div>
+      <div class="member-role" style="background:rgba(56,189,248,0.1);color:var(--accent);">Lead Developer</div>
+      <div class="tech-tags" style="justify-content:center;margin-top:12px;">
+        <span class="tag">ML Model</span><span class="tag">Backend API</span><span class="tag">Data Pipeline</span>
+      </div>
+    </div>
+    <div class="member-card">
+      <div class="member-avatar" style="background:linear-gradient(135deg,#f472b6,#ec4899);">HI</div>
+      <div class="member-name">Hasna Ishtiaq</div>
+      <div class="member-id">MIS ID: 42013</div>
+      <div class="member-role" style="background:rgba(244,114,182,0.1);color:var(--accent3);">ML Engineer</div>
+      <div class="tech-tags" style="justify-content:center;margin-top:12px;">
+        <span class="tag">Feature Eng.</span><span class="tag">Model Training</span><span class="tag">Testing</span>
+      </div>
+    </div>
+    <div class="member-card">
+      <div class="member-avatar" style="background:linear-gradient(135deg,#fb923c,#f97316);">JS</div>
+      <div class="member-name">Jaweria Shakoor</div>
+      <div class="member-id">MIS ID: --</div>
+      <div class="member-role" style="background:rgba(251,146,60,0.1);color:var(--accent4);">Frontend & UI</div>
+      <div class="tech-tags" style="justify-content:center;margin-top:12px;">
+        <span class="tag">Dashboard</span><span class="tag">Chatbot UI</span><span class="tag">Portfolio</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label mb2">🏗️ System Architecture</div>
+  <div class="grid2 mb3">
+    <div class="card">
+      <div class="card-title">🧠 ML Pipeline</div>
+      <p style="color:var(--muted);font-size:13px;line-height:2;">
+        1. <strong>Data Fetch</strong> — Yahoo Finance API (2 years)<br>
+        2. <strong>Feature Engineering</strong> — 18 technical indicators<br>
+        3. <strong>Model Training</strong> — Linear Regression + Random Forest<br>
+        4. <strong>Ensemble</strong> — 40% LR + 60% RF weighted average<br>
+        5. <strong>Evaluation</strong> — MAE, RMSE, R² Score<br>
+        6. <strong>Prediction</strong> — Next N days rolling forecast
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">⚙️ Tech Stack</div>
+      <p style="color:var(--muted);font-size:13px;line-height:2;">
+        <strong>Backend:</strong> Python 3.11, Flask, Flask-CORS<br>
+        <strong>ML:</strong> scikit-learn, NumPy, Pandas<br>
+        <strong>Data:</strong> yfinance (Yahoo Finance API)<br>
+        <strong>Frontend:</strong> HTML5, CSS3, JavaScript ES6+<br>
+        <strong>Charts:</strong> Chart.js 4.4<br>
+        <strong>Dept:</strong> Software Engineering
+      </p>
+    </div>
+  </div>
+
+  <div class="card text-center">
+    <div style="font-size:2rem;margin-bottom:0.5rem;">🎓</div>
+    <div style="font-weight:700;font-size:1.1rem;">Department of Software Engineering</div>
+    <div style="color:var(--muted);font-size:13px;margin-top:4px;">Final Year Project · AI & Machine Learning Track · 2025</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════
+let priceChartInst = null, volChartInst = null, maChartInst = null;
+let predChartInst  = null, portChartInst = null;
+let currentSymbol  = 'AAPL';
+const BASE = '';
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'market') loadMarket();
+  if (name === 'portfolio') refreshPortfolio();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = (type==='success'?'✅':'❌') + ' ' + msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+async function loadDashStock() {
+  const sym = document.getElementById('dashSearch').value.trim().toUpperCase() || 'AAPL';
+  currentSymbol = sym;
+  document.getElementById('dashLoading').style.display = 'flex';
+  document.getElementById('dashContent').style.display  = 'none';
+  try {
+    const [infoRes, chartRes, predRes] = await Promise.all([
+      fetch(`${BASE}/api/stock/${sym}`).then(r=>r.json()),
+      fetch(`${BASE}/api/chart/${sym}?period=6mo`).then(r=>r.json()),
+      fetch(`${BASE}/api/predict/${sym}?days=7`).then(r=>r.json()),
+    ]);
+    if (infoRes.success)  renderStockCard(infoRes.data);
+    if (chartRes.success) renderCharts(chartRes.data);
+    if (predRes.success)  renderDashPreds(predRes.predictions);
+    document.getElementById('dashLoading').style.display = 'none';
+    document.getElementById('dashContent').style.display  = 'block';
+    toast(`${sym} loaded successfully!`);
+  } catch(e) {
+    document.getElementById('dashLoading').style.display = 'none';
+    toast('Failed to load data. Check connection.', 'error');
+  }
+}
+
+function renderStockCard(info) {
+  const up = info.change >= 0;
+  document.getElementById('dashStockCard').innerHTML = `
+    <div class="sic-top">
+      <div>
+        <div class="sic-name">${info.name||info.symbol}</div>
+        <div class="sic-symbol">${info.symbol} · ${info.sector||'N/A'}</div>
+      </div>
+      <div class="sic-price">
+        <div class="price" style="color:${up?'var(--green)':'var(--red)'}">$${info.price}</div>
+        <div class="change ${up?'up-color':'dn-color'}">
+          ${up?'▲':'▼'} ${Math.abs(info.change)} (${up?'+':''}${info.change_pct}%)
+        </div>
+      </div>
+    </div>
+    <div class="sic-grid">
+      <div class="sic-stat"><div class="sic-stat-lbl">52W High</div><div class="sic-stat-val">$${info['52w_high']||'--'}</div></div>
+      <div class="sic-stat"><div class="sic-stat-lbl">52W Low</div><div class="sic-stat-val">$${info['52w_low']||'--'}</div></div>
+      <div class="sic-stat"><div class="sic-stat-lbl">P/E Ratio</div><div class="sic-stat-val">${info.pe_ratio||'--'}</div></div>
+      <div class="sic-stat"><div class="sic-stat-lbl">Trend</div><div class="sic-stat-val">${info.trend}</div></div>
+    </div>`;
+}
+
+function renderCharts(data) {
+  const cfg = (type,labels,datasets,opts={}) => ({type,data:{labels,datasets},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+    scales:{x:{ticks:{color:'#64748b',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.04)'}},
+            y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.06)'}}},...opts}});
+
+  if (priceChartInst) priceChartInst.destroy();
+  priceChartInst = new Chart(document.getElementById('priceChart'), cfg('line', data.dates,
+    [{label:'Close',data:data.close,borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,0.06)',
+      borderWidth:2,pointRadius:0,fill:true,tension:0.3},
+     {label:'MA20',data:data.ma20,borderColor:'#fb923c',borderWidth:1.5,pointRadius:0,borderDash:[4,4]},
+     {label:'MA50',data:data.ma50,borderColor:'#f472b6',borderWidth:1.5,pointRadius:0,borderDash:[4,4]}]));
+
+  if (volChartInst) volChartInst.destroy();
+  volChartInst = new Chart(document.getElementById('volumeChart'), cfg('bar', data.dates,
+    [{label:'Volume',data:data.volume,backgroundColor:'rgba(74,222,128,0.4)',borderRadius:2}]));
+
+  if (maChartInst) maChartInst.destroy();
+  maChartInst = new Chart(document.getElementById('maChart'), cfg('line', data.dates,
+    [{label:'Close',data:data.close,borderColor:'#38bdf8',borderWidth:2,pointRadius:0,tension:0.3},
+     {label:'MA20',data:data.ma20,borderColor:'#f472b6',borderWidth:1.5,pointRadius:0,borderDash:[5,5]},
+     {label:'MA50',data:data.ma50,borderColor:'#fb923c',borderWidth:1.5,pointRadius:0,borderDash:[5,5]}]));
+}
+
+async function changeChartPeriod(period, btn) {
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const res = await fetch(`${BASE}/api/chart/${currentSymbol}?period=${period}`).then(r=>r.json());
+  if (res.success) renderCharts(res.data);
+}
+
+function renderDashPreds(preds) {
+  document.getElementById('dashPredGrid').innerHTML = preds.map(p => `
+    <div class="pred-card">
+      <div class="pred-date">${p.date}</div>
+      <div class="pred-price" style="color:${p.change>=0?'var(--green)':'var(--red)'}">$${p.predicted}</div>
+      <div class="pred-chg" style="color:${p.change>=0?'var(--green)':'var(--red)'}">
+        ${p.change>=0?'+':''}${p.change}% ${p.trend}
+      </div>
+    </div>`).join('');
+}
+
+async function quickPredict() {
+  const sym = document.getElementById('dashSearch').value.trim().toUpperCase() || 'AAPL';
+  showPage('predict');
+  document.querySelectorAll('.nav-tab')[1].classList.add('active');
+  document.querySelectorAll('.nav-tab')[0].classList.remove('active');
+  document.getElementById('predSymbol').value = sym;
+  trainAndPredict();
+}
+
+// Load watchlist on start
+async function loadWatchlist() {
+  try {
+    const res = await fetch(`${BASE}/api/watchlist`).then(r=>r.json());
+    if (!res.success) return;
+    const colors = ['#38bdf8','#4ade80','#f472b6','#fb923c','#a78bfa','#34d399','#fbbf24','#60a5fa'];
+    document.getElementById('watchlistContainer').innerHTML = res.watchlist.map((s,i) => `
+      <div class="watchlist-item" onclick="loadSymbol('${s.symbol}')">
+        <div class="wi-left">
+          <div class="wi-avatar" style="background:${colors[i%colors.length]}22;color:${colors[i%colors.length]}">
+            ${s.symbol.substring(0,2)}
+          </div>
+          <div>
+            <div class="wi-sym">${s.symbol}</div>
+            <div class="wi-name">${(s.name||'').substring(0,25)}</div>
+          </div>
+        </div>
+        <div class="wi-right">
+          <div class="wi-price">$${s.price}</div>
+          <div class="wi-chg ${s.change>=0?'up-color':'dn-color'}">
+            ${s.change>=0?'+':''}${s.change_pct}%
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function loadSymbol(sym) {
+  document.getElementById('dashSearch').value = sym;
+  loadDashStock();
+}
+
+// ═══════════════════════════════════════════════════════
+// PREDICT PAGE
+// ═══════════════════════════════════════════════════════
+async function trainAndPredict() {
+  const sym  = document.getElementById('predSymbol').value.trim().toUpperCase() || 'AAPL';
+  const days = parseInt(document.getElementById('predDays').value) || 7;
+  document.getElementById('predLoading').style.display = 'flex';
+  document.getElementById('predContent').style.display  = 'none';
+  document.getElementById('predLoadText').textContent   = `Training ML model on ${sym} (2 years data)...`;
+  try {
+    const trainRes = await fetch(`${BASE}/api/train/${sym}`, {method:'POST'}).then(r=>r.json());
+    document.getElementById('predLoadText').textContent = 'Generating predictions...';
+    const predRes  = await fetch(`${BASE}/api/predict/${sym}?days=${days}`).then(r=>r.json());
+    const chartRes = await fetch(`${BASE}/api/chart/${sym}?period=3mo`).then(r=>r.json());
+    if (trainRes.success) renderMetrics(trainRes.metrics);
+    if (predRes.success)  renderPredictions(predRes.predictions);
+    if (chartRes.success && predRes.success) renderPredChart(chartRes.data, predRes.predictions);
+    document.getElementById('predLoading').style.display = 'none';
+    document.getElementById('predContent').style.display  = 'block';
+    toast(`Model trained! Accuracy: ${trainRes.metrics?.r2||'--'}%`);
+  } catch(e) {
+    document.getElementById('predLoading').style.display = 'none';
+    toast('Training failed. Please try again.', 'error');
+  }
+}
+
+async function predictOnly() {
+  const sym  = document.getElementById('predSymbol').value.trim().toUpperCase() || 'AAPL';
+  const days = parseInt(document.getElementById('predDays').value) || 7;
+  document.getElementById('predLoading').style.display = 'flex';
+  document.getElementById('predContent').style.display  = 'none';
+  document.getElementById('predLoadText').textContent   = 'Generating predictions...';
+  try {
+    const predRes  = await fetch(`${BASE}/api/predict/${sym}?days=${days}`).then(r=>r.json());
+    if (predRes.success) renderPredictions(predRes.predictions);
+    document.getElementById('predLoading').style.display = 'none';
+    document.getElementById('predContent').style.display  = 'block';
+  } catch(e) {
+    document.getElementById('predLoading').style.display = 'none';
+    toast('Prediction failed.', 'error');
+  }
+}
+
+function renderMetrics(m) {
+  const cards = [
+    {val: m.r2+'%',    lbl:'Model Accuracy',    color:'var(--accent2)'},
+    {val: m.mae,       lbl:'Mean Abs Error',     color:'var(--accent)'},
+    {val: m.rmse,      lbl:'RMSE',               color:'var(--purple)'},
+    {val: m.samples,   lbl:'Training Samples',   color:'var(--accent4)'},
+  ];
+  document.getElementById('metricsGrid').innerHTML = cards.map(c => `
+    <div class="metric-card">
+      <div class="metric-val" style="color:${c.color}">${c.val}</div>
+      <div class="metric-lbl">${c.lbl}</div>
+    </div>`).join('');
+}
+
+function renderPredictions(preds) {
+  document.getElementById('predGrid').innerHTML = preds.map(p => `
+    <div class="pred-card">
+      <div class="pred-date">${p.date}</div>
+      <div class="pred-price" style="color:${p.change>=0?'var(--green)':'var(--red)'}">$${p.predicted}</div>
+      <div class="pred-chg" style="color:${p.change>=0?'var(--green)':'var(--red)'}">
+        ${p.change>=0?'+':''}${p.change}%
+      </div>
+      <div style="font-size:20px;margin-top:4px;">${p.trend.includes('UP')?'📈':'📉'}</div>
+    </div>`).join('');
+}
+
+function renderPredChart(hist, preds) {
+  if (predChartInst) predChartInst.destroy();
+  const histLabels = hist.dates.slice(-60);
+  const histClose  = hist.close.slice(-60);
+  const predLabels = preds.map(p=>p.date);
+  const predPrices = preds.map(p=>p.predicted);
+  const bridgeLabel = histLabels[histLabels.length-1];
+  const bridgePrice = histClose[histClose.length-1];
+  predChartInst = new Chart(document.getElementById('predChart'), {
+    type:'line',
+    data:{
+      labels:[...histLabels,...predLabels],
+      datasets:[
+        {label:'Historical',data:[...histClose,...new Array(predLabels.length).fill(null)],
+         borderColor:'#38bdf8',borderWidth:2,pointRadius:0,fill:false,tension:0.3},
+        {label:'AI Prediction',
+         data:[...new Array(histLabels.length-1).fill(null),bridgePrice,...predPrices],
+         borderColor:'#4ade80',borderWidth:2.5,borderDash:[6,3],
+         pointRadius:5,pointBackgroundColor:'#4ade80',fill:false,tension:0.3},
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8'}}},
+      scales:{x:{ticks:{color:'#64748b',maxTicksLimit:10},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,0.06)'}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CHATBOT
+// ═══════════════════════════════════════════════════════
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  addChatMsg(msg, 'user');
+  input.value = '';
+  showTyping();
+  try {
+    const res = await fetch(`${BASE}/api/chat`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message: msg})
+    }).then(r=>r.json());
+    hideTyping();
+    if (res.success) {
+      addChatMsg(formatChatMsg(res.result.response), 'bot');
+    } else {
+      addChatMsg('❌ ' + res.error, 'bot');
+    }
+  } catch(e) {
+    hideTyping();
+    addChatMsg('⚠️ Connection error. Is the server running?', 'bot');
+  }
+}
+
+function formatChatMsg(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function addChatMsg(text, role) {
+  const wrap = document.getElementById('chatMsgs');
+  const now  = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const el   = document.createElement('div');
+  el.className = `msg ${role}`;
+  el.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${now}</div>`;
+  wrap.appendChild(el);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+let typingEl = null;
+function showTyping() {
+  typingEl = document.createElement('div');
+  typingEl.className = 'msg bot';
+  typingEl.innerHTML = `<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  document.getElementById('chatMsgs').appendChild(typingEl);
+  document.getElementById('chatMsgs').scrollTop = 9999;
+}
+function hideTyping() { if(typingEl) typingEl.remove(); }
+
+function sendQuick(msg) {
+  document.getElementById('chatInput').value = msg;
+  sendChat();
+}
+
+// ═══════════════════════════════════════════════════════
+// PORTFOLIO
+// ═══════════════════════════════════════════════════════
+async function addToPortfolio() {
+  const sym   = document.getElementById('portSymbol').value.trim().toUpperCase();
+  const shares= parseFloat(document.getElementById('portShares').value);
+  const price = parseFloat(document.getElementById('portPrice').value);
+  if (!sym||!shares||!price) { toast('Fill all fields!','error'); return; }
+  try {
+    const res = await fetch(`${BASE}/api/portfolio/add`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({symbol:sym,shares,buy_price:price})
+    }).then(r=>r.json());
+    if (res.success) { toast(`${sym} added!`); refreshPortfolio();
+      document.getElementById('portSymbol').value='';
+      document.getElementById('portShares').value='';
+      document.getElementById('portPrice').value='';
+    } else toast(res.error,'error');
+  } catch(e) { toast('Error adding stock','error'); }
+}
+
+async function refreshPortfolio() {
+  try {
+    const res = await fetch(`${BASE}/api/portfolio`).then(r=>r.json());
+    if (!res.success) return;
+    const s = res.summary;
+    document.getElementById('ps-inv').textContent = '$'+s.total_invested;
+    document.getElementById('ps-cur').textContent = '$'+s.total_current;
+    document.getElementById('ps-pnl').textContent = (s.total_pnl>=0?'+':'')+'$'+s.total_pnl;
+    document.getElementById('ps-pnl').style.color  = s.total_pnl>=0?'var(--green)':'var(--red)';
+    document.getElementById('ps-cnt').textContent = s.holdings_count;
+    if (res.holdings.length === 0) {
+      document.getElementById('portTable').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No holdings yet. Add your first stock above!</div>';
+      return;
+    }
+    document.getElementById('portTable').innerHTML = `
+      <table><thead><tr>
+        <th>Symbol</th><th>Shares</th><th>Avg Buy</th><th>Current</th>
+        <th>Invested</th><th>Value</th><th>P&L</th><th>Status</th><th></th>
+      </tr></thead><tbody>
+        ${res.holdings.map(h=>`<tr>
+          <td><strong>${h.symbol}</strong></td>
+          <td>${h.shares}</td>
+          <td>$${h.avg_price}</td>
+          <td>$${h.current}</td>
+          <td>$${h.invested}</td>
+          <td>$${h.current_val}</td>
+          <td style="color:${h.pnl>=0?'var(--green)':'var(--red)'}">
+            ${h.pnl>=0?'+':''}$${h.pnl} (${h.pnl_pct}%)
+          </td>
+          <td>${h.status}</td>
+          <td><button class="btn btn-red btn-sm" onclick="removeStock('${h.symbol}')">✕</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    renderPortfolioChart(res.holdings);
+  } catch(e) {}
+}
+
+async function removeStock(sym) {
+  await fetch(`${BASE}/api/portfolio/remove/${sym}`,{method:'DELETE'});
+  toast(`${sym} removed.`);
+  refreshPortfolio();
+}
+
+function renderPortfolioChart(holdings) {
+  if (!holdings.length) return;
+  document.getElementById('portChartWrap').style.display = 'block';
+  if (portChartInst) portChartInst.destroy();
+  const colors = ['#38bdf8','#4ade80','#f472b6','#fb923c','#a78bfa','#fbbf24','#34d399','#60a5fa'];
+  portChartInst = new Chart(document.getElementById('portChart'),{
+    type:'doughnut',
+    data:{labels:holdings.map(h=>h.symbol),
+          datasets:[{data:holdings.map(h=>h.current_val),
+                     backgroundColor:colors.slice(0,holdings.length),
+                     borderWidth:2,borderColor:'var(--bg)'}]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8'}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MARKET PAGE
+// ═══════════════════════════════════════════════════════
+async function loadMarket() {
+  const indices = [
+    {id:'mkt-sp500',sym:'^GSPC',name:'S&P 500'},
+    {id:'mkt-nasdaq',sym:'^IXIC',name:'NASDAQ'},
+    {id:'mkt-dow',sym:'^DJI',name:'Dow Jones'},
+  ];
+  for (const idx of indices) {
+    try {
+      const res = await fetch(`${BASE}/api/stock/${idx.sym}`).then(r=>r.json());
+      if (res.success) {
+        const d = res.data;
+        const up = d.change >= 0;
+        document.getElementById(idx.id).innerHTML = `
+          <div class="ps-lbl">${idx.name}</div>
+          <div class="ps-val" style="color:${up?'var(--green)':'var(--red)'}">
+            ${d.price.toLocaleString()}
+          </div>
+          <div style="font-size:12px;color:${up?'var(--green)':'var(--red)'}">
+            ${up?'▲':'▼'} ${Math.abs(d.change_pct)}%
+          </div>`;
+      }
+    } catch(e){}
+  }
+  const res = await fetch(`${BASE}/api/watchlist`).then(r=>r.json());
+  if (res.success) {
+    const sorted = [...res.watchlist].sort((a,b) => b.change_pct - a.change_pct);
+    const gainers = sorted.filter(s => s.change_pct > 0).slice(0,4);
+    const losers  = sorted.filter(s => s.change_pct < 0).slice(0,4);
+    const mkItem = (s, up) => `
+      <div class="watchlist-item">
+        <div class="wi-left">
+          <div class="wi-avatar" style="background:${up?'rgba(74,222,128,0.1)':'rgba(248,113,113,0.1)'};color:${up?'var(--green)':'var(--red)'}">${s.symbol.substring(0,2)}</div>
+          <div><div class="wi-sym">${s.symbol}</div><div class="wi-name">$${s.price}</div></div>
+        </div>
+        <div class="wi-right"><div class="wi-chg ${up?'up-color':'dn-color'}">${up?'+':''}${s.change_pct}%</div></div>
+      </div>`;
+    document.getElementById('gainersContainer').innerHTML = gainers.map(s=>mkItem(s,true)).join('');
+    document.getElementById('losersContainer').innerHTML  = losers.map(s=>mkItem(s,false)).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TICKER
+// ═══════════════════════════════════════════════════════
+async function loadTicker() {
+  try {
+    const res = await fetch(`${BASE}/api/watchlist`).then(r=>r.json());
+    if (!res.success) return;
+    const items = res.watchlist;
+    const html  = items.map(s => `
+      <span class="ticker-item">
+        <span class="ticker-sym">${s.symbol}</span>
+        <span class="ticker-price">$${s.price}</span>
+        <span class="ticker-chg ${s.change>=0?'up':'dn'}">${s.change>=0?'+':''}${s.change_pct}%</span>
+      </span>`).join('');
+    document.getElementById('tickerInner').innerHTML = html + html; // duplicate for seamless loop
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadTicker();
+  loadWatchlist();
+  // Auto-load AAPL on dashboard
+  setTimeout(() => {
+    document.getElementById('dashSearch').value = 'AAPL';
+    loadDashStock();
+  }, 500);
+});
+</script>
+</body>
+</html>
